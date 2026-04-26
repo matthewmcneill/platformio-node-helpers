@@ -116,6 +116,20 @@ export async function findPythonExecutable() {
           fs.existsSync(executable) &&
           (await callInstallerScript(executable, ['check', 'python']))
         ) {
+          // Verify Python version does not exceed maximum stable baseline (e.g., < 3.13)
+          try {
+            const versionCheck = await proc.getCommandOutput(executable, [
+              '-c',
+              'import sys; print("1" if sys.version_info < (3, 13) else "0")'
+            ]);
+            if (versionCheck.trim() !== '1') {
+              console.warn(`Python at ${executable} exceeds max supported version (>= 3.13)`);
+              continue; // Reject bleeding edge and force fallback loop
+            }
+          } catch (err) {
+            console.warn(`Failed to verify Python version structure for ${executable}:`, err);
+            continue;
+          }
           return executable;
         }
       } catch (err) {
