@@ -2,3 +2,4 @@ node_modules
 dist
 yarn.lock
 package-lock.json
+platformio-node-helpers-11.3.0.tgz

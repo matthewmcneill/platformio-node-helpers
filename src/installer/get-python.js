@@ -104,7 +104,8 @@ jjxDah2nGN59PRbxYvnKkKj9
 -----END CERTIFICATE-----
 `;
 
-export async function findPythonExecutable() {
+export async function findPythonExecutable(options = {}) {
+  const maxPythonVersion = options.maxPythonVersion || process.env.PLATFORMIO_MAX_PYTHON_VERSION || '3.13';
   const exenames = proc.IS_WINDOWS ? ['python.exe'] : ['python3', 'python'];
   const envPath = process.env.PLATFORMIO_PATH || process.env.PATH;
   const errors = [];
@@ -116,14 +117,14 @@ export async function findPythonExecutable() {
           fs.existsSync(executable) &&
           (await callInstallerScript(executable, ['check', 'python']))
         ) {
-          // Verify Python version does not exceed maximum stable baseline (e.g., < 3.13)
+          // Verify Python version does not exceed maximum stable baseline
           try {
             const versionCheck = await proc.getCommandOutput(executable, [
               '-c',
-              'import sys; print("1" if sys.version_info < (3, 13) else "0")'
+              `import sys; print("1" if sys.version_info < tuple(map(int, "${maxPythonVersion}".split("."))) else "0")`
             ]);
             if (versionCheck.trim() !== '1') {
-              console.warn(`Python at ${executable} exceeds max supported version (>= 3.13)`);
+              console.warn(`Python at ${executable} exceeds max supported version (>= ${maxPythonVersion})`);
               continue; // Reject bleeding edge and force fallback loop
             }
           } catch (err) {
